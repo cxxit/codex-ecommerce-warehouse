@@ -1,6 +1,6 @@
 # Codex E-Commerce Warehouse
 
-A portfolio data warehouse project developed with **Codex CLI**. The goal is to learn how to design and build a local analytics pipeline step by step, with Codex acting as a coding partner and tutor—not as a substitute for understanding the decisions.
+A portfolio data warehouse project developed with **Codex CLI**, with a **Power BI** report for e-commerce operations analytics. The goal is to learn how to design and build a local analytics pipeline step by step, with Codex acting as a coding partner and tutor—not as a substitute for understanding the decisions.
 
 > **Project status:** planning. The architecture and tools below are proposals; implementation has not started.
 
@@ -19,11 +19,11 @@ The planned source is the [Brazilian E-Commerce Public Dataset by Olist](https:/
 ## Proposed Architecture
 
 ```text
-Olist CSVs → raw files → Python ingestion → DuckDB staging
-           → dbt dimensional models → dashboard
+Olist CSVs → raw files → Python ingestion → PostgreSQL staging
+           → dbt dimensional models → Power BI report
 ```
 
-A local orchestrator will manage dependencies, runs, and failures. DuckDB, dbt with the DuckDB adapter, and Dagster are candidate tools; the final choices depend on the preferred Windows setup. The first version is intended to run locally without a cloud platform.
+Apache Airflow will orchestrate ingestion and transformations. Docker Compose will run Airflow and PostgreSQL locally. PostgreSQL will store warehouse data in a Docker named volume so it survives container replacement, and publish port `5432` so local PostgreSQL tools can connect at `localhost:5432`. Keep Airflow metadata in a separate database from the warehouse, even if both databases use the same local PostgreSQL service. Use dbt with the `dbt-postgres` adapter for dimensional models. No cloud platform is required. See the [Docker volume guide](https://docs.docker.com/engine/storage/volumes/), [Airflow Docker deployment guidance](https://airflow.apache.org/docs/apache-airflow/stable/installation.html), and [dbt adapter docs](https://docs.getdbt.com/guides/adapter-creation).
 
 ## Planned Warehouse Model
 
@@ -36,13 +36,17 @@ Candidate fact tables:
 
 Shared dimensions may include product, seller, customer, geography, and date. Each table's grain should be documented, and joins between different grains must not inflate measures.
 
+## Power BI Business Analytics
+
+Build a Power BI report on top of the dimensional warehouse to answer the business questions above. The report will present operational KPIs such as item sales, order volume, delivery delay rate, average delivery time, and review score, with analysis by product, seller, geography, and time. Define each KPI's business meaning and calculation in the warehouse or report documentation so users can interpret it consistently.
+
 ## Learning Approach
 
 Build in small, reviewable stages. For each stage, understand the business question, data grain, design choice, and validation approach before moving on. Use Codex CLI to explain options, review plans and code, and help debug; keep the reasoning and final decisions understandable to the project owner.
 
 ## Current Setup
 
-The repository currently contains the project brief and an empty `src/` directory. No install, run, or test commands are available yet. Add setup instructions here when the toolchain is selected and implemented.
+The repository currently contains project documentation and a SQL file with business questions and a draft architecture. No install, run, or test commands are available yet. Add setup instructions here as the planned stack is implemented.
 
 See [PROJECT_BRIEF.md](PROJECT_BRIEF.md) for the detailed goals, architecture proposal, and open setup decision.
 
