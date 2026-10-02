@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a portfolio-quality local data warehouse for e-commerce operations. The project should help an operations team understand sales performance and fulfillment quality, including which products, sellers, and regions contribute to item sales, where delivery delays occur, and how delivery times relate to customer reviews.
+Build a portfolio-quality local data warehouse and Power BI dashboard report for e-commerce operations. The project should help an operations team understand sales performance and fulfillment quality, including which products, sellers, and regions contribute to item sales, where delivery delays occur, and how delivery times relate to customer reviews. Present the findings through clearly defined business KPIs and analytics in Power BI.
 
 The repository owner wants to learn the process. Work through decisions and implementation in understandable stages; explain the purpose of each component and ask for input when a meaningful choice remains. Do not build the implementation before agreeing on the design and first milestone.
 
@@ -14,9 +14,9 @@ Source: [Olist dataset on Kaggle](https://www.kaggle.com/olistbr/brazilian-ecomm
 
 ## Proposed Local Architecture
 
-`Olist CSVs → unchanged raw files → Python ingestion → DuckDB staging → dbt SQL models → dashboard`
+`Olist CSVs → unchanged raw files → Python ingestion → PostgreSQL staging → dbt SQL models → Power BI dashboard`
 
-Use an orchestrator to run ingestion and transformations in dependency order and expose run history and failures. DuckDB, dbt with the DuckDB adapter, and Dagster are candidate tools, subject to confirming the Windows setup requirements. Keep the first version local; no cloud platform is required. Include both a dimensional warehouse and a dashboard in the portfolio deliverable.
+Use Docker Compose to run Apache Airflow and PostgreSQL locally. Airflow runs ingestion and transformations in dependency order and exposes run history and failures. Store PostgreSQL data in a Docker named volume so it persists when containers are replaced. Publish PostgreSQL port `5432` to the host so local PostgreSQL tools and Power BI can connect at `localhost:5432`. Keep Airflow metadata in a separate database from the warehouse. Use dbt with the `dbt-postgres` adapter for SQL transformations. Power BI will present operational KPIs and answer the defined business questions, including sales by product/seller/region, delivery delays, delivery time, and review scores. No cloud platform is required. See the [Docker volume guide](https://docs.docker.com/engine/storage/volumes/), [Airflow Docker deployment guidance](https://airflow.apache.org/docs/apache-airflow/stable/installation.html), and [dbt adapter docs](https://docs.getdbt.com/guides/adapter-creation).
 
 ## Candidate Dimensional Model
 
@@ -30,7 +30,7 @@ Keep each fact table's grain explicit and prevent joins between different grains
 
 ## Open Decision
 
-Confirm whether the owner prefers tools that run directly on Windows or is comfortable using WSL or Docker for local development. Use that preference to finalize the orchestrator and dashboard choices before implementation.
+Confirm the preferred local PostgreSQL client (for example, `psql`, DBeaver, or pgAdmin) and use environment variables for database credentials. Define each report KPI's grain, business meaning, and calculation before building its Power BI visual.
 
 ---
 
