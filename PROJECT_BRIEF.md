@@ -2,35 +2,39 @@
 
 ## Goal
 
-Build a portfolio-quality local data warehouse and Power BI dashboard report for e-commerce operations. The project should help an operations team understand sales performance and fulfillment quality, including which products, sellers, and regions contribute to item sales, where delivery delays occur, and how delivery times relate to customer reviews. Present the findings through clearly defined business KPIs and analytics in Power BI.
+Build a portfolio-quality local data warehouse and Power BI dashboard report for e-commerce operations. The project should help an operations team understand sales performance and available fulfillment measures, including which products and customers contribute to sales and how order volumes change over time. Present findings through clearly defined business KPIs and analytics in Power BI.
 
-The repository owner wants to learn the process. Work through decisions and implementation in understandable stages; explain the purpose of each component and ask for input when a meaningful choice remains. Do not build the implementation before agreeing on the design and first milestone.
+The repository owner wants to learn the process. Work through decisions and implementation in understandable stages; explain the purpose of each component and ask for input when a meaningful choice remains. Build the implementation in small, reviewable milestones.
 
 ## Data Source
 
-Use the Brazilian E-Commerce Public Dataset by Olist, a historical dataset of roughly 100,000 orders from 2016–2018 with order, item, payment, seller, product, customer, delivery, and review data. Treat it as historical data: demonstrate repeatable loads or monthly replays rather than describing it as a current live feed.
+Use a locally hosted Medusa commerce application as the source, accessed through its REST APIs. Medusa exposes related commerce entities such as products, customers, carts, and orders. It is an application, not a hosted historical dataset like Olist, so the project must populate it with sample or generated transactions before it can support useful historical analysis. API availability and authentication depend on the configured Medusa instance.
 
-Source: [Olist dataset on Kaggle](https://www.kaggle.com/olistbr/brazilian-ecommerce)
+Source documentation: [Medusa Store API reference](https://docs.medusajs.com/api/store)
 
 ## Proposed Local Architecture
 
-`Olist CSVs → unchanged raw files → Python ingestion → PostgreSQL staging → dbt SQL models → Power BI dashboard`
+`Medusa REST API -> Python ingestion -> PostgreSQL warehouse staging -> dbt SQL models -> Power BI dashboard`
 
-Use Docker Compose to run Apache Airflow and PostgreSQL locally. Airflow runs ingestion and transformations in dependency order and exposes run history and failures. Store PostgreSQL data in a Docker named volume so it persists when containers are replaced. Publish PostgreSQL port `5432` to the host so local PostgreSQL tools and Power BI can connect at `localhost:5432`. Keep Airflow metadata in a separate database from the warehouse. Use dbt with the `dbt-postgres` adapter for SQL transformations. Power BI will present operational KPIs and answer the defined business questions, including sales by product/seller/region, delivery delays, delivery time, and review scores. No cloud platform is required. See the [Docker volume guide](https://docs.docker.com/engine/storage/volumes/), [Airflow Docker deployment guidance](https://airflow.apache.org/docs/apache-airflow/stable/installation.html), and [dbt adapter docs](https://docs.getdbt.com/guides/adapter-creation).
+Use a root-level `docker-compose.yml` file to coordinate the Medusa, PostgreSQL, and data-pipeline services. Keep the Medusa application and its `Dockerfile` in `medusa/`; keep API ingestion code and its `Dockerfile` in `data-pipeline/`. PostgreSQL can use the official image directly and does not need a custom `Dockerfile`. An optional `postgres/init/` directory can contain SQL scripts that run during first-time database initialization.
+
+Persist PostgreSQL data in a Docker named volume and publish port `5432` to the host for local database clients and Power BI. Use separate databases for Medusa's operational data and warehouse data in the PostgreSQL service. The pipeline reads Medusa through REST APIs and loads the extracted data into warehouse staging. Add Airflow later if orchestration is a learning milestone. Use dbt with the `dbt-postgres` adapter for dimensional models. See the [Docker volume guide](https://docs.docker.com/engine/storage/volumes/) and [dbt adapter docs](https://docs.getdbt.com/guides/adapter-creation).
 
 ## Candidate Dimensional Model
 
-- `fact_order_items`: one row per item within an order; sales by product and seller.
-- `fact_orders`: one row per order; lifecycle and delivery timing.
-- `fact_payments`: one row per payment record; preserve split payments without multiplying item sales.
-- `fact_reviews`: one row per review.
-- Shared dimensions: product, seller, customer, geography, and date.
+- `fact_order_items`: one row per item within an order; product sales.
+- `fact_orders`: one row per order; order lifecycle and fulfillment measures available from the source.
+- `fact_payments`: one row per payment record, if payment data is available through the configured API and access permissions.
+- `fact_reviews`: include only if a review API or Medusa extension is added.
+- Shared dimensions may include product, customer, geography, and date. Include seller only if supported by source data.
 
-Keep each fact table's grain explicit and prevent joins between different grains from inflating measures.
+Keep each fact table's grain explicit and prevent joins between different grains from inflating measures. Confirm the exact fields and relationships available in the Medusa instance before finalizing the model.
 
-## Open Decision
+## Analytics Scope and Open Decisions
 
-Confirm the preferred local PostgreSQL client (for example, `psql`, DBeaver, or pgAdmin) and use environment variables for database credentials. Define each report KPI's grain, business meaning, and calculation before building its Power BI visual.
+Initial report KPIs can include item sales and order volume, segmented by product, customer, and time where source fields support them. Delivery delay and review-score analysis require those fields to be populated in Medusa or supplied by an additional API source. Define each KPI's grain, business meaning, and calculation before building its Power BI visual.
+
+The root Compose file and the Medusa and data-pipeline Dockerfiles are empty placeholders. Agree on the first implementation milestone and decide how sample or generated transaction data will be created for Medusa.
 
 ---
 
