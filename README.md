@@ -1,6 +1,6 @@
 # Codex E-Commerce Warehouse
 
-A portfolio data warehouse project developed with **Codex CLI**, with a **Power BI** report for e-commerce operations analytics. The goal is to learn how to design and build a local analytics pipeline step by step, with Codex acting as a coding partner and tutor—not as a substitute for understanding the decisions.
+A portfolio data warehouse project developed with **Codex CLI**, with a **Power BI** report for e-commerce operations analytics. The goal is to learn how to design and build a local analytics pipeline step by step, with Codex acting as a coding partner and tutor, not as a substitute for understanding the decisions.
 
 > **Project status:** planning. The architecture and tools below are proposals; implementation has not started.
 
@@ -8,37 +8,39 @@ A portfolio data warehouse project developed with **Codex CLI**, with a **Power 
 
 Explore e-commerce sales and fulfillment performance. The warehouse should help answer questions such as:
 
-- Which products, sellers, and regions contribute most to item sales?
-- Where and when are deliveries late?
-- How do delivery times relate to customer review scores?
+- Which products and customers contribute most to item sales?
+- How do order volumes and sales change over time?
+- Which fulfillment measures can be analyzed from the configured commerce data?
+
+The availability of seller, shipping, and review analysis depends on the Medusa configuration or additional data sources.
 
 ## Data
 
-The planned source is the [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/olistbr/brazilian-ecommerce), containing historical order, item, payment, customer, seller, product, delivery, and review data from 2016–2018. Because it is historical data, pipeline runs will demonstrate reproducible loads or monthly replays rather than a live feed.
+The planned source is a locally hosted [Medusa](https://medusajs.com/) commerce application accessed through its REST APIs. Medusa provides related commerce entities such as products, customers, carts, and orders. Unlike Olist, Medusa is an application rather than a ready-made historical dataset, so the project will need sample or generated commerce activity to populate it. Pipeline runs will demonstrate repeatable API extraction and loading into the local warehouse.
 
 ## Proposed Architecture
 
 ```text
-Olist CSVs → raw files → Python ingestion → PostgreSQL staging
-           → dbt dimensional models → Power BI report
+Medusa REST API -> Python ingestion -> PostgreSQL warehouse staging
+                -> dbt dimensional models -> Power BI report
 ```
 
-Apache Airflow will orchestrate ingestion and transformations. Docker Compose will run Airflow and PostgreSQL locally. PostgreSQL will store warehouse data in a Docker named volume so it survives container replacement, and publish port `5432` so local PostgreSQL tools can connect at `localhost:5432`. Keep Airflow metadata in a separate database from the warehouse, even if both databases use the same local PostgreSQL service. Use dbt with the `dbt-postgres` adapter for dimensional models. No cloud platform is required. See the [Docker volume guide](https://docs.docker.com/engine/storage/volumes/), [Airflow Docker deployment guidance](https://airflow.apache.org/docs/apache-airflow/stable/installation.html), and [dbt adapter docs](https://docs.getdbt.com/guides/adapter-creation).
+The proposed local layout has a root-level `docker-compose.yml` file coordinating the Medusa, PostgreSQL, and data-pipeline services. Keep the Medusa application and its `Dockerfile` in `medusa/`, and the ingestion code and its `Dockerfile` in `data-pipeline/`. PostgreSQL can use the official image directly, without a custom `Dockerfile`; an optional `postgres/init/` directory can contain first-initialization SQL. Persist PostgreSQL data in a named Docker volume and publish port `5432` for local clients. Use separate databases for Medusa's operational data and the analytics warehouse within the PostgreSQL service. The pipeline will call Medusa's REST API and load data into warehouse staging. Add Airflow when orchestration is a project milestone; dbt with the `dbt-postgres` adapter can build dimensional models. See the [Docker volume guide](https://docs.docker.com/engine/storage/volumes/), [Medusa Store API reference](https://docs.medusajs.com/api/store), and [dbt adapter docs](https://docs.getdbt.com/guides/adapter-creation).
 
 ## Planned Warehouse Model
 
-Candidate fact tables:
+Candidate fact tables, based on entities and fields available in the configured Medusa application:
 
-- `fact_order_items` — one row per item within an order, for product and seller sales.
-- `fact_orders` — one row per order, for lifecycle and delivery timing.
-- `fact_payments` — one row per payment record, preserving split payments.
-- `fact_reviews` — one row per review.
+- `fact_order_items` - one row per item within an order, for product sales.
+- `fact_orders` - one row per order, for order lifecycle and available fulfillment measures.
+- `fact_payments` - one row per payment record if payment data is exposed to the pipeline.
+- `fact_reviews` - only if a review source or Medusa extension is added.
 
-Shared dimensions may include product, seller, customer, geography, and date. Each table's grain should be documented, and joins between different grains must not inflate measures.
+Shared dimensions may include product, customer, geography, and date. Include seller only if the source data supports it. Document each table's grain and avoid joins between different grains that inflate measures.
 
 ## Power BI Business Analytics
 
-Build a Power BI report on top of the dimensional warehouse to answer the business questions above. The report will present operational KPIs such as item sales, order volume, delivery delay rate, average delivery time, and review score, with analysis by product, seller, geography, and time. Define each KPI's business meaning and calculation in the warehouse or report documentation so users can interpret it consistently.
+Build a Power BI report on top of the dimensional warehouse to answer the supported business questions. Initial KPIs can include item sales and order volume, with analysis by product, customer, and time where those fields are available. Delivery delay and review-score analysis depend on data populated in Medusa or additional API sources. Define each KPI's business meaning and calculation in the warehouse or report documentation so users can interpret it consistently.
 
 ## Learning Approach
 
@@ -46,7 +48,7 @@ Build in small, reviewable stages. For each stage, understand the business quest
 
 ## Current Setup
 
-The repository currently contains project documentation and a SQL file with business questions and a draft architecture. No install, run, or test commands are available yet. Add setup instructions here as the planned stack is implemented.
+The repository currently contains project documentation. No install, run, or test commands are available yet. The root `docker-compose.yml` and service Dockerfiles are empty placeholders; an optional `postgres/init/` directory can be added if initialization scripts are needed. Add setup instructions as the planned stack is implemented.
 
 See [PROJECT_BRIEF.md](PROJECT_BRIEF.md) for the detailed goals, architecture proposal, and open setup decision.
 
