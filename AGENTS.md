@@ -155,7 +155,7 @@ Propose a specific, approved inspection of existing configuration before relying
 
 ## 11. Git and Version Control
 
-Use short, imperative commit messages, e.g. `Add order staging model`. Never automatically stage, commit, push, branch, merge, or rewrite history. Every Git inspection or mutation requires Section 2 approval. Never commit credentials, secret-bearing environment files, downloaded datasets, or generated database files.
+Use short, clear, easily understandable, imperative commit messages, e.g. `Add order staging model`. Never automatically stage, commit, push, branch, merge, or rewrite history. Every Git inspection or mutation requires Section 2 approval. Never commit credentials, secret-bearing environment files, downloaded datasets, or generated database files.
 
 ## 12. Learning-Oriented Collaboration
 
