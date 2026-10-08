@@ -2,6 +2,8 @@
 
 A learning-focused portfolio project for building a local analytics warehouse and Power BI report from the historical Brazilian E-Commerce Public Dataset by Olist. The project is developed in small, reviewable stages, with each data model and KPI tied to a clear business meaning.
 
+This is a Codex-guided learning project that teaches the data engineering pipeline step by step, from ingestion and data validation to dimensional modelling, transformation, and analytics, with orchestration as a later learning milestone.
+
 ## Project Scope
 
 Use Olist's published CSV files as the source. The dataset contains historical order, item, payment, review, customer, seller, product, and geolocation data. It supports analysis of sales, order activity, delivery performance, and review scores for the period covered by the dataset. This is a repeatable file-based ingestion project; a live commerce platform and REST API ingestion are outside the current scope.
