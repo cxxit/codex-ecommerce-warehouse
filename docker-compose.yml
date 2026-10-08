@@ -10,7 +10,11 @@
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d warehouse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4
@@ -24,6 +28,14 @@
       - postgres
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+  
+  ingestion: 
+    build: 
+      context: ./data-pipeline
+      dockerfile: Dockerfile 
+    depends_on:
+      postgres: 
+        condition: service_healthy
 
 volumes:
   postgres_data:
