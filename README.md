@@ -6,16 +6,16 @@ A learning-focused portfolio project for building a local analytics warehouse an
 
 Use Olist's published CSV files as the source. The dataset contains historical order, item, payment, review, customer, seller, product, and geolocation data. It supports analysis of sales, order activity, delivery performance, and review scores for the period covered by the dataset. This is a repeatable file-based ingestion project; a live commerce platform and REST API ingestion are outside the current scope.
 
-## Planned Architecture
+## Architecture and Current Status
 
 ```text
 Olist CSV files -> Python ingestion -> PostgreSQL raw/staging schemas
                 -> dbt staging and dimensional models -> Power BI report
 ```
 
-Keep downloaded source files in a documented raw-data location, separate from code. Preserve the original files and do not commit downloaded data or generated database files unless the project later documents a reason to do so. Use Python to load the CSVs repeatably into PostgreSQL. Use dbt with the `dbt-postgres` adapter to transform and test the warehouse models. Airflow may be added later if orchestration becomes a learning milestone; it is not required for the initial pipeline.
+The Docker Compose setup for PostgreSQL and pgAdmin is in place, and the data-pipeline Dockerfile is configured for ingestion dependencies. The Olist CSV tables have been loaded into the PostgreSQL `raw` schema. The next steps are to validate the raw data, then build dbt staging and dimensional models with the `dbt-postgres` adapter.
 
-The current `docker-compose.yml` provides PostgreSQL and pgAdmin with named data volumes. A data-pipeline Dockerfile scaffold is present. The Python ingestion implementation, dbt project, and Power BI report remain future milestones.
+Keep downloaded source files separate from code, and do not commit source data or generated database files unless the project later documents a reason to do so. Treat loads as repeatable historical data loads, not as a live feed. Airflow may be added later if orchestration becomes a useful learning milestone; it is not required for the initial pipeline.
 
 ## Warehouse Model
 
@@ -26,16 +26,15 @@ Model each fact table at an explicit grain to prevent double-counting:
 - `fact_payments`: one row per payment record, for payment method and payment value analysis.
 - `fact_reviews`: one row per review record, for review score and review timing analysis.
 
-Potential dimensions include date, product, customer, seller, and geography. Preserve the distinction between Olist's order-level `customer_id` and the repeat-customer `customer_unique_id`. Confirm source keys and relationships during profiling, and document every KPI's grain and calculation before using it in Power BI.
+Potential dimensions include date, product, customer, seller, and geography. Preserve the distinction between Olist's order-level `customer_id` and the repeat-customer `customer_unique_id`. Confirm source keys and relationships during raw data validation, and document every KPI's grain and calculation before using it in Power BI.
 
 ## Learning Plan
 
-1. Obtain and inspect the Olist source files; document their tables, columns, grains, keys, and relationships.
-2. Load the original CSVs repeatably into PostgreSQL raw tables with Python.
-3. Validate row counts, required fields, key uniqueness, and relationships.
-4. Build dbt staging and dimensional models, with tests for important keys and relationships.
-5. Define business KPIs and build the Power BI report.
-6. Add orchestration only if it supports a later project milestone.
+1. **Complete:** Set up the Docker Compose services and data-pipeline image, then load the Olist CSV tables into PostgreSQL's `raw` schema.
+2. Validate raw row counts, required fields, key uniqueness, and relationships against the source files.
+3. Set up dbt sources and staging models, then build dimensional models with tests for important keys and relationships.
+4. Define business KPIs and build the Power BI report.
+5. Add orchestration only if it supports a later project milestone.
 
 See [PROJECT_BRIEF.md](PROJECT_BRIEF.md) for the project goals and modeling scope, and [dictionary/plan.md](dictionary/plan.md) for the staged implementation checklist.
 
