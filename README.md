@@ -1,57 +1,44 @@
-# Codex E-Commerce Warehouse
+# Olist E-Commerce Data Warehouse
 
-A portfolio data warehouse project developed with **Codex CLI**, with a **Power BI** report for e-commerce operations analytics. The goal is to learn how to design and build a local analytics pipeline step by step, with Codex acting as a coding partner and tutor, not as a substitute for understanding the decisions.
+A learning-focused portfolio project for building a local analytics warehouse and Power BI report from the historical Brazilian E-Commerce Public Dataset by Olist. The project is developed in small, reviewable stages, with each data model and KPI tied to a clear business meaning.
 
-> **Project status:** planning. The architecture and tools below are proposals; implementation has not started.
+## Project Scope
 
-## Business Problem
+Use Olist's published CSV files as the source. The dataset contains historical order, item, payment, review, customer, seller, product, and geolocation data. It supports analysis of sales, order activity, delivery performance, and review scores for the period covered by the dataset. This is a repeatable file-based ingestion project; a live commerce platform and REST API ingestion are outside the current scope.
 
-Explore e-commerce sales and fulfillment performance. The warehouse should help answer questions such as:
-
-- Which products and customers contribute most to item sales?
-- How do order volumes and sales change over time?
-- Which fulfillment measures can be analyzed from the configured commerce data?
-
-The availability of seller, shipping, and review analysis depends on the Medusa configuration or additional data sources.
-
-## Data
-
-The planned source is a locally hosted [Medusa](https://medusajs.com/) commerce application accessed through its REST APIs. Medusa provides related commerce entities such as products, customers, carts, and orders. Unlike Olist, Medusa is an application rather than a ready-made historical dataset, so the project will need sample or generated commerce activity to populate it. Pipeline runs will demonstrate repeatable API extraction and loading into the local warehouse.
-
-## Proposed Architecture
+## Planned Architecture
 
 ```text
-Medusa REST API -> Python ingestion -> PostgreSQL warehouse staging
-                -> dbt dimensional models -> Power BI report
+Olist CSV files -> Python ingestion -> PostgreSQL raw/staging schemas
+                -> dbt staging and dimensional models -> Power BI report
 ```
 
-The proposed local layout has a root-level `docker-compose.yml` file coordinating the Medusa, PostgreSQL, and data-pipeline services. Keep the Medusa application and its `Dockerfile` in `medusa/`, and the ingestion code and its `Dockerfile` in `data-pipeline/`. PostgreSQL can use the official image directly, without a custom `Dockerfile`; an optional `postgres/init/` directory can contain first-initialization SQL. Persist PostgreSQL data in a named Docker volume and publish port `5432` for local clients. Use separate databases for Medusa's operational data and the analytics warehouse within the PostgreSQL service. The pipeline will call Medusa's REST API and load data into warehouse staging. Add Airflow when orchestration is a project milestone; dbt with the `dbt-postgres` adapter can build dimensional models. See the [Docker volume guide](https://docs.docker.com/engine/storage/volumes/), [Medusa Store API reference](https://docs.medusajs.com/api/store), and [dbt adapter docs](https://docs.getdbt.com/guides/adapter-creation).
+Keep downloaded source files in a documented raw-data location, separate from code. Preserve the original files and do not commit downloaded data or generated database files unless the project later documents a reason to do so. Use Python to load the CSVs repeatably into PostgreSQL. Use dbt with the `dbt-postgres` adapter to transform and test the warehouse models. Airflow may be added later if orchestration becomes a learning milestone; it is not required for the initial pipeline.
 
-## Planned Warehouse Model
+The current `docker-compose.yml` provides PostgreSQL and pgAdmin with named data volumes. A data-pipeline Dockerfile scaffold is present. The Python ingestion implementation, dbt project, and Power BI report remain future milestones.
 
-Candidate fact tables, based on entities and fields available in the configured Medusa application:
+## Warehouse Model
 
-- `fact_order_items` - one row per item within an order, for product sales.
-- `fact_orders` - one row per order, for order lifecycle and available fulfillment measures.
-- `fact_payments` - one row per payment record if payment data is exposed to the pipeline.
-- `fact_reviews` - only if a review source or Medusa extension is added.
+Model each fact table at an explicit grain to prevent double-counting:
 
-Shared dimensions may include product, customer, geography, and date. Include seller only if the source data supports it. Document each table's grain and avoid joins between different grains that inflate measures.
+- `fact_order_items`: one row per order item, for product sales and freight analysis.
+- `fact_orders`: one row per order, for order lifecycle and delivery measures.
+- `fact_payments`: one row per payment record, for payment method and payment value analysis.
+- `fact_reviews`: one row per review record, for review score and review timing analysis.
 
-## Power BI Business Analytics
+Potential dimensions include date, product, customer, seller, and geography. Preserve the distinction between Olist's order-level `customer_id` and the repeat-customer `customer_unique_id`. Confirm source keys and relationships during profiling, and document every KPI's grain and calculation before using it in Power BI.
 
-Build a Power BI report on top of the dimensional warehouse to answer the supported business questions. Initial KPIs can include item sales and order volume, with analysis by product, customer, and time where those fields are available. Delivery delay and review-score analysis depend on data populated in Medusa or additional API sources. Define each KPI's business meaning and calculation in the warehouse or report documentation so users can interpret it consistently.
+## Learning Plan
 
-## Learning Approach
+1. Obtain and inspect the Olist source files; document their tables, columns, grains, keys, and relationships.
+2. Load the original CSVs repeatably into PostgreSQL raw tables with Python.
+3. Validate row counts, required fields, key uniqueness, and relationships.
+4. Build dbt staging and dimensional models, with tests for important keys and relationships.
+5. Define business KPIs and build the Power BI report.
+6. Add orchestration only if it supports a later project milestone.
 
-Build in small, reviewable stages. For each stage, understand the business question, data grain, design choice, and validation approach before moving on. Use Codex CLI to explain options, review plans and code, and help debug; keep the reasoning and final decisions understandable to the project owner.
-
-## Current Setup
-
-The repository currently contains project documentation. No install, run, or test commands are available yet. The root `docker-compose.yml` and service Dockerfiles are empty placeholders; an optional `postgres/init/` directory can be added if initialization scripts are needed. Add setup instructions as the planned stack is implemented.
-
-See [PROJECT_BRIEF.md](PROJECT_BRIEF.md) for the detailed goals, architecture proposal, and open setup decision.
+See [PROJECT_BRIEF.md](PROJECT_BRIEF.md) for the project goals and modeling scope, and [dictionary/plan.md](dictionary/plan.md) for the staged implementation checklist.
 
 ---
 
-_This document was generated by OpenAI Codex CLI._
+_This document describes the current Olist-based project scope._
