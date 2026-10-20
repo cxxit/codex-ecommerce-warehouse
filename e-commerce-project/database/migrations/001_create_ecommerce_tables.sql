@@ -13,3 +13,16 @@ create table public.geolocation (
         check (geolocation_zip_code_prefix ~ '^[0-9]{5}$')
 );
 
+
+create table public.sellers (
+    seller_id varchar(32) NOT NULL,
+    geolocation_id bigint NOT NULL,
+
+    constraint pk_sellers
+        primary key (seller_id),
+
+    constraint fk_seller_geolocation
+        foreign key (geolocation_id)
+        references public.geolocation(geolocation_id)
+);
+
